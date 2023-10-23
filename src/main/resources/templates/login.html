@@ -1,0 +1,13 @@
+<div class="container">
+    <form action="/auth/loginProc" method="post"> <!--컨트롤러에 해당 주소 맵핑 안만들고 시큐리티가 가로채게 할것-->
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" class="form-control" name="username" placeholder="Enter username" id="username">
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" class="form-control" name="password" placeholder="Enter password" id="password">
+        </div>
+        <button id="btn-login" class="btn btn-primary">로그인</button>
+    </form>
+</div>
