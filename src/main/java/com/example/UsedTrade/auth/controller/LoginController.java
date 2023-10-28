@@ -1,9 +1,14 @@
 package com.example.UsedTrade.auth.controller;
 
+import com.example.UsedTrade.auth.model.Token;
 import com.example.UsedTrade.auth.model.request.JoinRequest;
 import com.example.UsedTrade.auth.model.request.LoginRequest;
 import com.example.UsedTrade.auth.service.UserService;
+import com.example.UsedTrade.support.ApiResponse;
+import com.example.UsedTrade.support.ApiResponseGenerator;
+import com.example.UsedTrade.support.MessageCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,18 +21,16 @@ public class LoginController
     private final UserService userService;
 
     @PostMapping("/join")
-    public ResponseEntity<String> join(@RequestBody JoinRequest request) {
+    public ApiResponse<ApiResponse.SuccessBody<Void>> join(@RequestBody JoinRequest request) {
         userService.join(request);
-        return ResponseEntity.ok().body("성공");
+        return ApiResponseGenerator.success(HttpStatus.OK, MessageCode.SUCCESS);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
-        boolean check = userService.login(request);
-        if(check){
-            return ResponseEntity.ok().body("로그인 성공");
-        }else {
-            return ResponseEntity.ok().body("로그인 실패");
-        }
+    public ApiResponse<ApiResponse.SuccessBody<Token>> login(@RequestBody LoginRequest request) {
+        Token token = userService.login(request);
+        return  ApiResponseGenerator.success(token,HttpStatus.OK, MessageCode.SUCCESS);
+
     }
+
 }
