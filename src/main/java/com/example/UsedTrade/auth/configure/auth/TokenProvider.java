@@ -8,7 +8,9 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
+@Getter
+@Setter
 @Component
 public class TokenProvider {
 
@@ -35,6 +39,10 @@ public class TokenProvider {
     private static final String BEARER = "Bearer ";
 
     private static final String EMAIL_CLAIM_KEY = "email";
+
+    private String AccessHeader = "Authorization";
+    private String RefreshHeader = "Authorization-refresh";
+
     private final UserRepository userRepository;
 
 
@@ -68,6 +76,22 @@ public class TokenProvider {
                 .compact();
     }
 
+    public String createAccessToken(String email) {
+        long now = (new Date()).getTime();
+        Date validity = new Date(now + ACCESS_TOKEN_EXPIRE_TIME);
+
+        return Jwts.builder() // JWT 토큰을 생성하는 빌더 반환
+                .setSubject(email)
+                .setExpiration(validity) // set Expire Time 해당 옵션 안넣으면 expire안함
+
+                //클레임으로는 저희는 email 하나만 사용합니다.
+                //추가적으로 식별자나, 이름 등의 정보를 더 추가하셔도 됩니다.
+                //추가하실 경우 .withClaim(클래임 이름, 클래임 값) 으로 설정해주시면 됩니다
+                .claim(EMAIL_CLAIM_KEY, email)
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes())) // HMAC512 알고리즘 사용, application-jwt.yml에서 지정한 secret 키로 암호화
+                .compact();
+    }
+
 
     public String createRefreshToken(UserEntity userEntity) {
         String authorities = userEntity.getAuthorities().stream()
@@ -81,6 +105,18 @@ public class TokenProvider {
         return Jwts.builder()
                 .setSubject(userEntity.getEmail())
                 .claim(AUTHORITIES_KEY, authorities) // 정보 저장
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes())) // 사용할 암호화 알고리즘과 , signature 에 들어갈 secret값 세팅
+                .setExpiration(validity) // set Expire Time 해당 옵션 안넣으면 expire안함
+                .compact();
+    }
+
+    public String createRefreshToken() {
+        // 토큰의 expire 시간을 설정
+        long now = (new Date()).getTime();
+        Date validity = new Date(now + REFRESH_TOKEN_EXPIRE_TIME);
+
+        return Jwts.builder()
+                .setSubject("RefreshToken")
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes())) // 사용할 암호화 알고리즘과 , signature 에 들어갈 secret값 세팅
                 .setExpiration(validity) // set Expire Time 해당 옵션 안넣으면 expire안함
                 .compact();
@@ -100,7 +136,7 @@ public class TokenProvider {
     public void sendAccessToken(HttpServletResponse response, String accessToken) {
         response.setStatus(HttpServletResponse.SC_OK);
 
-        response.setHeader("Authorization", accessToken);
+        response.setHeader(AccessHeader, accessToken);
         log.info("재발급된 Access Token : {}", accessToken);
     }
 
@@ -110,8 +146,8 @@ public class TokenProvider {
     public void sendAccessAndRefreshToken(HttpServletResponse response, String accessToken, String refreshToken){
         response.setStatus(HttpServletResponse.SC_OK);
 
-        response.setHeader("Authorization", accessToken);
-        response.setHeader("Authorization-refresh", refreshToken);
+        response.setHeader(AccessHeader, accessToken);
+        response.setHeader(RefreshHeader, refreshToken);
         log.info("Access Token, Refresh Token 헤더 설정 완료");
     }
 
@@ -121,7 +157,7 @@ public class TokenProvider {
      * 헤더를 가져온 후 "Bearer"를 삭제(""로 replace)
      */
     public Optional<String> extractRefreshToken(HttpServletRequest request) {
-        return Optional.ofNullable(request.getHeader("Authorization-refresh"))
+        return Optional.ofNullable(request.getHeader(RefreshHeader))
                 .filter(refreshToken -> refreshToken.startsWith(BEARER))
                 .map(refreshToken -> refreshToken.replace(BEARER, ""));
     }
@@ -132,7 +168,7 @@ public class TokenProvider {
      * 헤더를 가져온 후 "Bearer"를 삭제(""로 replace)
      */
     public Optional<String> extractAccessToken(HttpServletRequest request) {
-        return Optional.ofNullable(request.getHeader("Authorization"))
+        return Optional.ofNullable(request.getHeader(AccessHeader))
                 .filter(refreshToken -> refreshToken.startsWith(BEARER))
                 .map(refreshToken -> refreshToken.replace(BEARER, ""));
     }

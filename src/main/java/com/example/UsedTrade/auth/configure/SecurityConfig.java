@@ -21,7 +21,9 @@ public class SecurityConfig  {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final JwtFilter jwtFilter;
-    //private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -37,13 +39,16 @@ public class SecurityConfig  {
                     .sessionManagement(session -> session
                             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(auth -> auth
-                            .requestMatchers("/api/v1/user/*").permitAll()
+                            .requestMatchers("/api/v1/user/*","/").permitAll()
                             .anyRequest().authenticated())
-                    //.oauth2Login(oauth -> oauth.successHandler(oAuth2LoginSuccessHandler).failureHandler(oAuth2LoginFailureHandler).userService(customOAuth2UserService))
                     .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                     .exceptionHandling(excep -> excep
                             .accessDeniedHandler(jwtAccessDeniedHandler)
                             .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                    .oauth2Login(oauth-> oauth
+                            .successHandler(oAuth2LoginSuccessHandler)
+                            .failureHandler(oAuth2LoginFailureHandler)
+                            .userInfoEndpoint(userInfo->userInfo.userService(customOAuth2UserService)))
                     .build();
 
     }
