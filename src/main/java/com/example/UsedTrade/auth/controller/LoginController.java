@@ -21,7 +21,7 @@ public class LoginController
     private final UserService userService;
 
     @PostMapping("/join")
-    public ApiResponse<ApiResponse.SuccessBody<Void>> join(@RequestBody JoinRequest request) {
+    public ApiResponse<ApiResponse.SuccessBody<Void>> join(@RequestBody JoinRequest request) throws Exception {
         userService.join(request);
         return ApiResponseGenerator.success(HttpStatus.OK, MessageCode.SUCCESS);
     }

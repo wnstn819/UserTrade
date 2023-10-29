@@ -2,9 +2,12 @@ package com.example.UsedTrade.auth.configure.auth;
 
 import com.example.UsedTrade.auth.entity.UserEntity;
 import com.example.UsedTrade.auth.model.Token;
+import com.example.UsedTrade.auth.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +32,10 @@ public class TokenProvider {
 
     private final Logger logger = LoggerFactory.getLogger(TokenProvider.class);
     private static final String AUTHORITIES_KEY = "auth";
+    private static final String BEARER = "Bearer ";
 
+    private static final String EMAIL_CLAIM_KEY = "email";
+    private final UserRepository userRepository;
 
 
 
@@ -55,8 +61,10 @@ public class TokenProvider {
         return Jwts.builder()
                 .setSubject(userEntity.getEmail())
                 .claim(AUTHORITIES_KEY, authorities) // 정보 저장
+                .claim(EMAIL_CLAIM_KEY, userEntity.getEmail())
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes())) // 사용할 암호화 알고리즘과 , signature 에 들어갈 secret값 세팅
                 .setExpiration(validity) // set Expire Time 해당 옵션 안넣으면 expire안함
+
                 .compact();
     }
 
@@ -86,6 +94,75 @@ public class TokenProvider {
                 .build();
     }
 
+    /**
+     * AccessToken 헤더에 실어서 보내기
+     */
+    public void sendAccessToken(HttpServletResponse response, String accessToken) {
+        response.setStatus(HttpServletResponse.SC_OK);
+
+        response.setHeader("Authorization", accessToken);
+        log.info("재발급된 Access Token : {}", accessToken);
+    }
+
+    /**
+     * AccessToken + RefreshToken 헤더에 실어서 보내기
+     */
+    public void sendAccessAndRefreshToken(HttpServletResponse response, String accessToken, String refreshToken){
+        response.setStatus(HttpServletResponse.SC_OK);
+
+        response.setHeader("Authorization", accessToken);
+        response.setHeader("Authorization-refresh", refreshToken);
+        log.info("Access Token, Refresh Token 헤더 설정 완료");
+    }
+
+    /**
+     * 헤더에서 RefreshToken 추출
+     * 토큰 형식 : Bearer XXX에서 Bearer를 제외하고 순수 토큰만 가져오기 위해서
+     * 헤더를 가져온 후 "Bearer"를 삭제(""로 replace)
+     */
+    public Optional<String> extractRefreshToken(HttpServletRequest request) {
+        return Optional.ofNullable(request.getHeader("Authorization-refresh"))
+                .filter(refreshToken -> refreshToken.startsWith(BEARER))
+                .map(refreshToken -> refreshToken.replace(BEARER, ""));
+    }
+
+    /**
+     * 헤더에서 AccessToken 추출
+     * 토큰 형식 : Bearer XXX에서 Bearer를 제외하고 순수 토큰만 가져오기 위해서
+     * 헤더를 가져온 후 "Bearer"를 삭제(""로 replace)
+     */
+    public Optional<String> extractAccessToken(HttpServletRequest request) {
+        return Optional.ofNullable(request.getHeader("Authorization"))
+                .filter(refreshToken -> refreshToken.startsWith(BEARER))
+                .map(refreshToken -> refreshToken.replace(BEARER, ""));
+    }
+
+    /**
+     * AccessToken에서 Email 추출
+     * 추출 전에 JWT.require()로 검증기 생성
+     * verify로 AceessToken 검증 후
+     * 유효하다면 getClaim()으로 이메일 추출
+     * 유효하지 않다면 빈 Optional 객체 반환
+     */
+    public Optional<String> extractEmail(String accessToken) {
+        try {
+            // 토큰 유효성 검사하는 데에 사용할 알고리즘이 있는 JWT verifier builder 반환
+            return Optional.ofNullable(
+                    Jwts.parserBuilder()
+                            .setSigningKey(secret.getBytes())
+                            .build()
+                            .parseClaimsJws(accessToken)
+                            .getBody()
+                            .get(EMAIL_CLAIM_KEY, String.class));
+        } catch (Exception e) {
+            log.error("액세스 토큰이 유효하지 않습니다.");
+            return Optional.empty();
+        }
+    }
+
+
+
+
     // 토큰으로 클레임을 만들고 이를 이용해 유저 객체를 만들어서 최종적으로 authentication 객체를 리턴
     public Authentication getAuthentication(String token) {
         Claims claims = Jwts
@@ -103,6 +180,17 @@ public class TokenProvider {
         User principal = new User(claims.getSubject(), "", authorities);
 
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+    }
+
+    /**
+     * RefreshToken DB 저장(업데이트)
+     */
+    public void updateRefreshToken(String email, String refreshToken) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> user.updateRefreshToken(refreshToken),
+                        () -> new Exception("일치하는 회원이 없습니다.")
+                );
     }
 
     // 토큰의 유효성 검증을 수행

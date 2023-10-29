@@ -1,9 +1,6 @@
 package com.example.UsedTrade.auth.configure;
 
-import com.example.UsedTrade.auth.configure.auth.JwtAccessDeniedHandler;
-import com.example.UsedTrade.auth.configure.auth.JwtAuthenticationEntryPoint;
-import com.example.UsedTrade.auth.configure.auth.JwtFilter;
-import com.example.UsedTrade.auth.configure.auth.TokenProvider;
+import com.example.UsedTrade.auth.configure.auth.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +21,7 @@ public class SecurityConfig  {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final JwtFilter jwtFilter;
-
+    //private final CustomOAuth2UserService customOAuth2UserService;
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -42,6 +39,7 @@ public class SecurityConfig  {
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/api/v1/user/*").permitAll()
                             .anyRequest().authenticated())
+                    //.oauth2Login(oauth -> oauth.successHandler(oAuth2LoginSuccessHandler).failureHandler(oAuth2LoginFailureHandler).userService(customOAuth2UserService))
                     .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                     .exceptionHandling(excep -> excep
                             .accessDeniedHandler(jwtAccessDeniedHandler)

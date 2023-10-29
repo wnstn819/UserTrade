@@ -13,10 +13,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class JoinRequest {
-    private String id;
     private String email;
     private String password;
     private String nickname;
+    private int age;
+    private String city;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
