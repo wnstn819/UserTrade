@@ -1,4 +1,4 @@
-package com.example.UsedTrade.auth.configure.auth;
+package com.example.UsedTrade.auth.util.oauth;
 
 import com.example.UsedTrade.auth.entity.Role;
 import lombok.Getter;

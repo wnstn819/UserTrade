@@ -1,7 +1,7 @@
 package com.example.UsedTrade.auth.entity;
 
 
-import com.example.UsedTrade.auth.configure.auth.OAuth2UserInfo;
+import com.example.UsedTrade.auth.util.oauth.OAuth2UserInfo;
 
 import java.util.Map;
 

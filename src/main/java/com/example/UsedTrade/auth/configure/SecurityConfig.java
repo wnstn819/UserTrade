@@ -1,6 +1,9 @@
 package com.example.UsedTrade.auth.configure;
 
 import com.example.UsedTrade.auth.configure.auth.*;
+import com.example.UsedTrade.auth.util.oauth.CustomOAuth2UserService;
+import com.example.UsedTrade.auth.util.oauth.OAuth2LoginFailureHandler;
+import com.example.UsedTrade.auth.util.oauth.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +42,7 @@ public class SecurityConfig  {
                     .sessionManagement(session -> session
                             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(auth -> auth
-                            .requestMatchers("/api/v1/user/*","/").permitAll()
+                            .requestMatchers("/api/v1/user/*","/","/ws/*").permitAll()
                             .anyRequest().authenticated())
                     .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                     .exceptionHandling(excep -> excep

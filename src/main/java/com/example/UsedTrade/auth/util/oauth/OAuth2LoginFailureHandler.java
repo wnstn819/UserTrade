@@ -1,4 +1,4 @@
-package com.example.UsedTrade.auth.configure.auth;
+package com.example.UsedTrade.auth.util.oauth;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

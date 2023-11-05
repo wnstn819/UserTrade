@@ -1,6 +1,7 @@
-package com.example.UsedTrade.auth.configure.auth;
+package com.example.UsedTrade.auth.util.oauth;
 
 
+import com.example.UsedTrade.auth.configure.auth.TokenProvider;
 import com.example.UsedTrade.auth.entity.Role;
 import com.example.UsedTrade.auth.repository.UserRepository;
 import jakarta.servlet.ServletException;
