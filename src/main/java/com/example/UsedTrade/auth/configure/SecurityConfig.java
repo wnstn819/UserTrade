@@ -42,7 +42,7 @@ public class SecurityConfig  {
                     .sessionManagement(session -> session
                             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(auth -> auth
-                            .requestMatchers("/api/v1/user/*","/","/ws/*").permitAll()
+                            .requestMatchers("/api/v1/user/*","/","/ws/*","/api/v1/data/*").permitAll()
                             .anyRequest().authenticated())
                     .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                     .exceptionHandling(excep -> excep
@@ -51,7 +51,8 @@ public class SecurityConfig  {
                     .oauth2Login(oauth-> oauth
                             .successHandler(oAuth2LoginSuccessHandler)
                             .failureHandler(oAuth2LoginFailureHandler)
-                            .userInfoEndpoint(userInfo->userInfo.userService(customOAuth2UserService)))
+                            .userInfoEndpoint(userInfo->userInfo.userService(customOAuth2UserService))
+                    )
                     .build();
 
     }
